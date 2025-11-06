@@ -1,0 +1,22 @@
+{
+    "terminal.integrated.env.osx": {
+        "PYTHONPATH": "${workspaceFolder}/causalgraph"
+    },
+    "python.linting.cwd": "",
+    "python.linting.enabled": true,
+    "python.linting.pycodestyleEnabled": false,
+    "python.linting.flake8Enabled": false,
+    "python.linting.pylintPath": "~/.pyenv/shims/pylint",
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.testing.pytestArgs": [],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "python.formatting.provider": "none",
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "editor.wordWrap": "off",
+    "esbonio.sphinx.confDir": "",
+    "python.languageServer": "None",
+    "python.REPL.enableREPLSmartSend": false
+}

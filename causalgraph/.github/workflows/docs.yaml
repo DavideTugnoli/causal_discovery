@@ -1,0 +1,130 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '**.py'
+      - 'requirements.txt'
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+    paths:
+      - 'docs/**'
+      - '**.py'
+      - 'requirements.txt'
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev pkg-config
+          ls -la /usr/include/graphviz/
+          dpkg -L libgraphviz-dev
+          pkg-config --libs-only-L libcgraph
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install sphinx pydata-sphinx-theme myst-parser numpydoc sphinx-autodoc-typehints
+          pip install sphinx-copybutton sphinx-design
+          pip install -e .
+
+      - name: Setup static files
+        run: |
+          cd docs
+          mkdir -p _static
+          # If you have logo files, you would copy them here
+          # cp ../logo-light.png _static/
+          # cp ../logo-dark.png _static/
+
+      - name: Generate API Documentation
+        run: |
+          cd docs
+          # Clean up previous API documentation
+          rm -rf api/
+          mkdir -p api/
+          
+          # Create the main API reference file
+          cat > api/index.rst << EOL
+          =============
+          API Reference
+          =============
+          
+          .. toctree::
+             :maxdepth: 2
+             :caption: Contents:
+          
+             modules
+          EOL
+          
+          # Generate new API documentation
+          sphinx-apidoc -f -o api ../causalexplain ../causalexplain/tests/* \
+            --tocfile modules \
+            --full \
+            --private \
+            --no-headings \
+            --maxdepth 4
+          
+          make html
+
+      - name: Build documentation
+        run: |
+          cd docs
+          touch _build/html/.nojekyll  # Prevent GitHub Pages from using Jekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/html
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
